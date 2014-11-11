@@ -1,4 +1,4 @@
-var crypto, graph, redis, url, key, 
+var crypto, graph, redis, url, key, User,
 secondsInOneHour, milisecondsInOneHour, uri, client;
 
 redis = require('redis');
@@ -9,24 +9,23 @@ graph = require('fbgraph');
 secondsInOneHour = 60 * 60;
 milisecondsInOneHour = secondsInOneHour * 1000;
 
-exports.connect = function (rds, tokenKey) {
-  key = tokenKey
+exports.connect = function (rds, tokenKey, usr) {
+  key = tokenKey;
+  User = usr;
   if (rds) {
-  uri = url.parse(rds);
-  client = redis.createClient(uri.port, uri.hostname);
+    uri = url.parse(rds);
+    client = redis.createClient(uri.port, uri.hostname);
 
-  if (uri.auth) {
-    client.auth(uri.auth.split(':')[1]);
+    if (uri.auth) {
+      client.auth(uri.auth.split(':')[1]);
+    }
+  } else {
+    client = redis.createClient();
   }
-} else {
-  client = redis.createClient();
-}
 };
 
 exports.credentials = function (timestamp, transactionId) {
   'use strict';
-
-  var key;
 
   timestamp = timestamp || new Date().getTime();
   transactionId = transactionId || crypto.createHash('sha1').update(crypto.randomBytes(10)).digest('hex');
