@@ -48,26 +48,13 @@ exports.signature = function () {
     transactionId = request.get('auth-transactionId');
     validSignature = exports.credentials(timestamp, transactionId).signature;
 
-    client.get(transactionId, function (error, used) {
-      if (error) {
-        return response.status(500).send(error);
-      }
-      if (used) {
-        return response.status(401).send('invalid transactionId');
-      }
-      if (now - timestamp > milisecondsInOneHour) {
-        return response.status(401).send('invalid timestamp');
-      }
-      if (signature !== validSignature) {
-        return response.statussend(401).send('invalid signature');
-      }
-
-      if (request.method !== 'OPTIONS') {
-        client.set(transactionId, timestamp);
-        client.expire(transactionId, secondsInOneHour);
-      }
-      return next();
-    });
+    if (now - timestamp > milisecondsInOneHour) {
+      return response.status(401).send('invalid timestamp');
+    }
+    if (signature !== validSignature) {
+      return response.statussend(401).send('invalid signature');
+    }
+    return next();
   };
 };
 
