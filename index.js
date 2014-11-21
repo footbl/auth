@@ -1,4 +1,4 @@
-var crypto, graph, redis, url,
+var crypto, graph, redis, url, key, User,
 secondsInOneHour, milisecondsInOneHour, uri, client;
 
 redis = require('redis');
@@ -9,27 +9,26 @@ graph = require('fbgraph');
 secondsInOneHour = 60 * 60;
 milisecondsInOneHour = secondsInOneHour * 1000;
 
-exports.connect = function (rds) {
+exports.connect = function (rds, tokenKey, usr) {
+  key = tokenKey;
+  User = usr;
   if (rds) {
-  uri = url.parse(rds);
-  client = redis.createClient(uri.port, uri.hostname);
+    uri = url.parse(rds);
+    client = redis.createClient(uri.port, uri.hostname);
 
-  if (uri.auth) {
-    client.auth(uri.auth.split(':')[1]);
+    if (uri.auth) {
+      client.auth(uri.auth.split(':')[1]);
+    }
+  } else {
+    client = redis.createClient();
   }
-} else {
-  client = redis.createClient();
-}
 };
 
 exports.credentials = function (timestamp, transactionId) {
   'use strict';
 
-  var key;
-
   timestamp = timestamp || new Date().getTime();
   transactionId = transactionId || crypto.createHash('sha1').update(crypto.randomBytes(10)).digest('hex');
-  key = nconf.get('KEY');
 
   return {
     timestamp     : timestamp,
@@ -49,26 +48,13 @@ exports.signature = function () {
     transactionId = request.get('auth-transactionId');
     validSignature = exports.credentials(timestamp, transactionId).signature;
 
-    client.get(transactionId, function (error, used) {
-      if (error) {
-        return response.status(500).send(error);
-      }
-      if (used) {
-        return response.status(401).send('invalid transactionId');
-      }
-      if (now - timestamp > milisecondsInOneHour) {
-        return response.status(401).send('invalid timestamp');
-      }
-      if (signature !== validSignature) {
-        return response.statussend(401).send('invalid signature');
-      }
-
-      if (request.method !== 'OPTIONS') {
-        client.set(transactionId, timestamp);
-        client.expire(transactionId, secondsInOneHour);
-      }
-      return next();
-    });
+    if (now - timestamp > milisecondsInOneHour) {
+      return response.status(401).send('invalid timestamp');
+    }
+    if (signature !== validSignature) {
+      return response.statussend(401).send('invalid signature');
+    }
+    return next();
   };
 };
 
@@ -78,7 +64,6 @@ exports.token = function (user) {
   var token, timestamp, key;
 
   timestamp = new Date().getTime();
-  key = nconf.get('TOKEN_SALT');
   token = crypto.createHash('sha1').update(timestamp + user._id + key).digest('hex');
 
   client.set(token, user._id);

@@ -1,10 +1,7 @@
 {
-  "name": "footbl auth",
+  "name": "auth",
   "version": "0.0.1",
   "description": "footbl auth",
-  "engines": {
-    "node": "0.10.21"
-  },
   "main": "index.js",
   "dependencies": {
     "fbgraph": "^0.2.10",
