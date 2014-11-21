@@ -103,18 +103,18 @@ exports.session = function (type) {
   };
 };
 
-exports.checkMethod = function (field, neasted) {                   
+exports.checkMethod = function (field, neasted, fte) {
   'use strict';                                                     
                                                                     
-  return function (request, response, next) {                       
-    var cmp;                                                        
-    cmp = request[field];                                           
-    cmp = neasted ? cmp[neasted] : cmp;                             
-    if (cmp._id.toString() !== request.session._id.toString()) {    
-      return response.status(405).end()                             
-    }                                                               
-    return next();                                                  
-  };                                                                
+  return function (request, response, next) {
+    var cmp;
+    cmp = request[field];
+    cmp = neasted ? cmp[neasted] : cmp;
+    if (cmp._id.toString() !== request.session._id.toString() && (!fte || !request[field][fte])) {
+      return response.status(405).end()
+    }
+    return next();
+  };
 };
 
 exports.facebook = function () {
