@@ -103,18 +103,19 @@ exports.session = function (type) {
   };
 };
 
-exports.checkMethod = function () {
-  'use strict';
-
-  return function (request, response, next) {
-    var user;
-    user = request.user;
-    if (user._id.toString() !== request.session._id.toString()) {
-      return response.status(405).end()
-    }
-    return next();
-  };
-}
+exports.checkMethod = function (field, neasted) {                   
+  'use strict';                                                     
+                                                                    
+  return function (request, response, next) {                       
+    var cmp;                                                        
+    cmp = request[field];                                           
+    cmp = neasted ? cmp[neasted] : cmp;                             
+    if (cmp._id.toString() !== request.session._id.toString()) {    
+      return response.status(405).end()                             
+    }                                                               
+    return next();                                                  
+  };                                                                
+};
 
 exports.facebook = function () {
   'use strict';
