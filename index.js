@@ -72,6 +72,23 @@ exports.token = function (user) {
   return token;
 };
 
+exports.populateSession = function () {
+  return function (request, response, next) {
+    var token;
+    token = request.get('auth-token');
+
+    return client.get(token, function (error, id) {
+      if (error || !id) {
+        return next();
+      }
+      return User.findById(id, function (error, user) {
+        request.session = user;
+        return next();
+      });
+    });
+  };
+};
+
 exports.session = function (type) {
   'use strict';
 
@@ -104,8 +121,8 @@ exports.session = function (type) {
 };
 
 exports.checkMethod = function (field, neasted, fte) {
-  'use strict';                                                     
-                                                                    
+  'use strict';
+
   return function (request, response, next) {
     var cmp;
     cmp = request[field];
