@@ -49,10 +49,10 @@ exports.signature = function () {
     validSignature = exports.credentials(timestamp, transactionId).signature;
 
     if (now - timestamp > milisecondsInOneHour) {
-      return response.status(401).send('invalid timestamp');
+      return next(new Error('invalid signature'));
     }
     if (signature !== validSignature) {
-      return response.statussend(401).send('invalid signature');
+      return next(new Error('invalid signature'));
     }
     return next();
   };
@@ -79,11 +79,11 @@ exports.populateSession = function () {
 
     return client.get(token, function (error, id) {
       if (error || !id) {
-        return next();
+        return next(error);
       }
       return User.findById(id, function (error, user) {
         request.session = user;
-        return next();
+        return next(error);
       });
     });
   };
@@ -98,20 +98,20 @@ exports.session = function (type) {
 
     return client.get(token, function (error, id) {
       if (error) {
-        return response.send(500).send(error);
+        return next(error)
       }
       if (!id) {
-        return response.status(401).end();
+        return next(new Error('invalid session'));
       }
       return User.findById(id, function (error, user) {
         if (error) {
-          return response.status(500).end(error);
+          return next(error)
         }
         if (!user) {
-          return response.status(401).end();
+          return next(new Error('invalid session'));
         }
         if (type && type !== user.type) {
-          response.send(401);
+          return next(new Error('invalid session'));
         }
         request.session = user;
         return next();
@@ -128,7 +128,7 @@ exports.checkMethod = function (field, neasted, fte) {
     cmp = request[field];
     cmp = neasted ? cmp[neasted] : cmp;
     if (cmp._id.toString() !== request.session._id.toString() && (!fte || !request[field][fte])) {
-      return response.status(405).end()
+      return next(new Error('invalid method'));
     }
     return next();
   };
